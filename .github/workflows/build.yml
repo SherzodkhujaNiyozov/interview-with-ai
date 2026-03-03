@@ -80,7 +80,5 @@ jobs:
             dist/*.zip
             dist/*.yml
             dist/*.yaml
-            dist/latest*.yml
-            dist/latest*.yaml
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: warn

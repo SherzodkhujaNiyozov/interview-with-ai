@@ -35,6 +35,31 @@ jobs:
         run: |
           echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          # Copy platform-specific binaries (unique names, no conflicts)
+          find artifacts -type f \( -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.exe" -o -name "*.zip" \) -exec cp {} release-assets/ \;
+          # Copy update metadata files, prefixing with platform to avoid name collisions
+          for dir in artifacts/*/; do
+            platform=$(basename "$dir")
+            for f in "$dir"*.yml "$dir"*.yaml; do
+              [ -f "$f" ] || continue
+              filename=$(basename "$f")
+              # latest*.yml files are platform-specific and already uniquely named
+              if [[ "$filename" == latest* ]]; then
+                cp "$f" "release-assets/$filename"
+              # Skip builder-debug.yml — not needed in release assets
+              elif [[ "$filename" == "builder-debug"* ]]; then
+                continue
+              else
+                cp "$f" "release-assets/$filename"
+              fi
+            done
+          done
+          echo "Release assets:"
+          ls -la release-assets/
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
@@ -44,14 +69,4 @@ jobs:
           name: Release v${{ steps.package-version.outputs.VERSION }}
           draft: false
           prerelease: false
-          files: |
-            artifacts/**/*.dmg
-            artifacts/**/*.AppImage
-            artifacts/**/*.deb
-            artifacts/**/*.rpm
-            artifacts/**/*.exe
-            artifacts/**/*.zip
-            artifacts/**/*.yml
-            artifacts/**/*.yaml
-            artifacts/**/latest*.yml
-            artifacts/**/latest*.yaml
+          files: release-assets/*
