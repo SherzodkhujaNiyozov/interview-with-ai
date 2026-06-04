@@ -71,9 +71,39 @@ class ChatHandler {
         }
       }
 
+      // Append furigana instruction if enabled and language is Japanese
+      const responseLanguage = this.configManager.getResponseLanguage();
+      const withFurigana = this.configManager.getWithFurigana();
+      if (withFurigana && responseLanguage === "ja") {
+        const furiganaInstruction = `【絶対ルール：ふりがな必須】
+あなたの回答(かいとう)では、全(すべ)ての漢字(かんじ)の直後(ちょくご)に丸括弧(まるかっこ)でひらがなの読(よ)みを付(つ)けてください。
+例外(れいがい)なし。一(ひと)つでも漢字(かんじ)にふりがなが無(な)ければ失格(しっかく)です。
+
+正(ただ)しい例(れい)：
+「私(わたし)はSplitterという割(わ)り勘(かん)アプリを開発(かいはつ)しました。技術(ぎじゅつ)スタックはReact Nativeです。」
+「認証(にんしょう)にはJWTを使(つか)っています。データベースはPostgreSQLで、Prismaで操作(そうさ)します。」
+
+間違(まちが)った例(れい)：
+「私はSplitterを開発しました」← ふりがなが無いのでNG`;
+
+        if (currentSystemPrompt) {
+          // Put furigana instruction BEFORE the system prompt so model sees it first
+          currentSystemPrompt = furiganaInstruction + "\n\n" + currentSystemPrompt;
+        } else {
+          currentSystemPrompt = furiganaInstruction + "\n\nあなたは日本語で答えるアシスタントです。";
+        }
+      }
+
       // Get the current AI provider and model from config
       const provider = this.configManager.getAiProvider();
-      const currentModel = this.configManager.getCurrentModel();
+      let currentModel = this.configManager.getCurrentModel();
+
+      // For Ollama chat, prefer deepseek-r1:14b for better text quality (especially Japanese)
+      // minicpm-v is a vision model and produces poor text-only responses
+      if (provider === AI_PROVIDERS.OLLAMA && currentModel && currentModel.startsWith("minicpm")) {
+        currentModel = "deepseek-r1:14b";
+        console.log("Chat: Switched from minicpm-v to deepseek-r1:14b for better text quality");
+      }
 
       console.log(`Processing message with ${provider} using model ${currentModel}`);
 
@@ -82,32 +112,57 @@ class ChatHandler {
         useStreaming = provider === AI_PROVIDERS.GEMINI || provider === AI_PROVIDERS.OLLAMA;
       }
 
+      // If furigana is enabled, append reminder to the last user message
+      // This is critical for small models that may forget system prompt instructions
+      if (withFurigana && responseLanguage === "ja") {
+        messages = [...messages];
+        const lastUserMsgIndex = messages.map(m => m.role).lastIndexOf("user");
+        if (lastUserMsgIndex !== -1) {
+          messages[lastUserMsgIndex] = {
+            ...messages[lastUserMsgIndex],
+            content: messages[lastUserMsgIndex].content + "\n\n（※回答(かいとう)の全(すべ)ての漢字(かんじ)にふりがなを付(つ)けてください。例(れい)：私(わたし)は開発(かいはつ)しました。）"
+          };
+        }
+      }
+
       // Create a copy of messages with system prompt if available
       let messagesWithSystem = [...messages];
-      
+
       // Always include system prompt at the beginning if it exists
-      // For empty chats or new conversations, this ensures the system prompt is included
-      // For existing conversations, we may need to replace the first message if it's already a system prompt
       if (currentSystemPrompt) {
         if (messagesWithSystem.length === 0) {
-          // For new conversations, add the system prompt as the first message
           messagesWithSystem.unshift({
             role: "system",
             content: currentSystemPrompt,
           });
         } else if (messagesWithSystem[0].role === "system") {
-          // If the first message is already a system prompt, replace it
           messagesWithSystem[0] = {
-            role: "system", 
+            role: "system",
             content: currentSystemPrompt
           };
         } else {
-          // Otherwise, add it at the beginning
           messagesWithSystem.unshift({
             role: "system",
             content: currentSystemPrompt,
           });
         }
+      }
+
+      // For furigana mode: inject a few-shot example right after system prompt
+      // This is the most effective way to make small models follow formatting
+      if (withFurigana && responseLanguage === "ja") {
+        const fewShotUser = {
+          role: "user",
+          content: "このプロジェクトの技術スタックを教えてください。"
+        };
+        const fewShotAssistant = {
+          role: "assistant",
+          content: "私(わたし)はSplitterという割(わ)り勘(かん)アプリを開発(かいはつ)しました。\n\nフロントエンドにはReact Native + Expoを使(つか)い、バックエンドにはNode.js + Express + Prisma + PostgreSQLを採用(さいよう)しました。\n\n主(おも)な技術(ぎじゅつ)：\n- 状態(じょうたい)管理(かんり)：Zustand\n- 認証(にんしょう)：JWT\n- AI解析(かいせき)：Google Gemini\n- 多言語(たげんご)対応(たいおう)：i18next（日本語(にほんご)・英語(えいご)・ウズベク語(ご)・ロシア語(ご)）"
+        };
+
+        // Insert few-shot example after system prompt (index 1)
+        const insertIdx = messagesWithSystem[0]?.role === "system" ? 1 : 0;
+        messagesWithSystem.splice(insertIdx, 0, fewShotUser, fewShotAssistant);
       }
 
       // Generate response based on the configured AI provider
@@ -472,11 +527,27 @@ class ChatHandler {
         throw new Error("Ollama URL is not configured");
       }
 
-      // Format messages for Ollama API
-      const formattedMessages = messages.map((msg) => ({
+      // Format messages for Ollama API - separate system message for Ollama's dedicated system parameter
+      const systemMsg = messages.find(msg => msg.role === "system");
+      const nonSystemMessages = messages.filter(msg => msg.role !== "system");
+      const formattedMessages = nonSystemMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
+
+      // Build base Ollama request body with dedicated system parameter
+      const ollamaBaseBody = {
+        model: model || "llama2",
+        messages: formattedMessages,
+        options: {
+          temperature: 0.7,
+        },
+        keep_alive: "10m",
+      };
+      // Use Ollama's dedicated 'system' parameter — stronger than system role in messages
+      if (systemMsg) {
+        ollamaBaseBody.system = systemMsg.content;
+      }
 
       // Check for existing conversation context for this window
       if (windowId) {
@@ -490,19 +561,15 @@ class ChatHandler {
       if (streaming && streamCallback) {
         // Signal stream start
         streamCallback("start");
-        
+
         // Setup for stream handling
         let fullResponse = "";
-        
+
         try {
           // API call to Ollama with streaming
           const response = await axios.post(`${ollamaUrl}/api/chat`, {
-            model: model || "llama2",
-            messages: formattedMessages,
+            ...ollamaBaseBody,
             stream: true,
-            options: {
-              temperature: 0.7,
-            },
           }, {
             responseType: 'stream'
           });
@@ -555,12 +622,8 @@ class ChatHandler {
       } else {
         // Non-streaming request
         const response = await axios.post(`${ollamaUrl}/api/chat`, {
-          model: model || "llama2",
-          messages: formattedMessages,
+          ...ollamaBaseBody,
           stream: false,
-          options: {
-            temperature: 0.7,
-          },
         });
 
         if (!response.data || !response.data.message) {

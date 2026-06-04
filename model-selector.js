@@ -100,6 +100,12 @@ async function loadCurrentSettings() {
     selectLanguageCard("en");
   }
 
+  // Set furigana toggle based on settings
+  const furiganaToggle = document.getElementById("furigana-toggle");
+  if (furiganaToggle) {
+    furiganaToggle.checked = currentSettings.withFurigana || false;
+  }
+
   // Update visibility based on provider
   utils.updateSectionVisibility(currentSettings.aiProvider);
 
@@ -543,6 +549,11 @@ saveBtn.addEventListener("click", async () => {
   const responseLanguage = selectedLanguageCard ? selectedLanguageCard.getAttribute("data-language") : "en"; // Default to 'en' if somehow none selected
   log.info("Selected response language:", responseLanguage);
 
+  // Get furigana setting
+  const furiganaToggle = document.getElementById("furigana-toggle");
+  const withFurigana = furiganaToggle ? furiganaToggle.checked : false;
+  log.info("With furigana:", withFurigana);
+
   // Disable the save button to prevent multiple clicks
   saveBtn.disabled = true;
   log.info("Save button disabled.");
@@ -553,6 +564,7 @@ saveBtn.addEventListener("click", async () => {
     currentModel,
     ollamaUrl, // Save the potentially modified URL
     responseLanguage,
+    withFurigana,
   };
 
   // Add Azure Foundry endpoint if using Azure Foundry

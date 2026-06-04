@@ -123,6 +123,11 @@ const SHORTCUTS = {
     handler: null,
     description: "Show this hotkey information",
   },
+  TOGGLE_VOICE: {
+    key: `${modifierKey}+Shift+L`,
+    handler: null,
+    description: "Start/stop voice listening (system audio → Japanese transcription → AI answer)",
+  },
 };
 
 // Wrap original handlers to log hotkey press

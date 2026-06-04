@@ -4,6 +4,7 @@ const { isLinux, isMac } = require("./config");
 const log = require("electron-log");
 const hotkeyManager = require("./hotkey-manager");
 const { ipcMain } = require("electron");
+const winCaptureHide = require("./win-capture-hide");
 
 let mainWindow;
 let modelListWindow;
@@ -55,6 +56,20 @@ function createMainWindow() {
 
     mainWindow.loadFile("index.html");
     mainWindow.setContentProtection(true);
+
+    // Use native Win32 SetWindowDisplayAffinity with WDA_EXCLUDEFROMCAPTURE
+    // for proper invisibility on Windows (fixes the black rectangle issue).
+    // Re-apply on every event that could re-create the native window.
+    const applyNativeHide = () => {
+      const ok = winCaptureHide.excludeFromCapture(mainWindow);
+      if (ok) log.info("Native WDA_EXCLUDEFROMCAPTURE applied to main window");
+    };
+    applyNativeHide();
+    mainWindow.on("ready-to-show", applyNativeHide);
+    mainWindow.webContents.on("did-finish-load", applyNativeHide);
+    mainWindow.on("show", applyNativeHide);
+    mainWindow.on("focus", applyNativeHide);
+    mainWindow.on("restore", applyNativeHide);
 
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.setAlwaysOnTop(true, "screen-saver", 1);
@@ -112,6 +127,15 @@ function createModelSelectionWindow() {
   });
 
   modelListWindow.loadFile("model-selector.html");
+
+  // Apply native screen-capture exclusion to settings window too
+  modelListWindow.setContentProtection(true);
+  const applyHideToSettings = () => winCaptureHide.excludeFromCapture(modelListWindow);
+  applyHideToSettings();
+  modelListWindow.on("ready-to-show", applyHideToSettings);
+  modelListWindow.webContents.on("did-finish-load", applyHideToSettings);
+  modelListWindow.on("show", applyHideToSettings);
+  modelListWindow.on("focus", applyHideToSettings);
 
   modelListWindow.on("closed", () => {
     modelListWindow = null;

@@ -333,8 +333,8 @@ async function captureScreenshot(mainWindow) {
     let base64Image = "";
     let success = false;
 
-    // Always try the Electron built-in method first in production for consistency
-    if (!isDev || (isLinux && !isCommandAvailable("import"))) {
+    // Try the Electron built-in method first (works in both dev and production)
+    if (true) {
       console.log("Using Electron's desktopCapturer for screenshot");
       try {
         base64Image = await captureElectronScreenshot(imagePath);

@@ -64,6 +64,18 @@ const IPC_CHANNELS = {
   CANCEL_AI_REQUEST: "cancel-ai-request",
   MODE_CHANGED: "mode-changed",
   GET_CURRENT_MODE: "get-current-mode",
+  // Voice (Ctrl+L) — system audio → Web Speech API → Gemini answer with furigana
+  VOICE_TOGGLE: "voice-toggle",
+  VOICE_STATE_CHANGED: "voice-state-changed",
+  VOICE_INTERIM_TRANSCRIPT: "voice-interim-transcript",
+  VOICE_FINAL_TRANSCRIPT: "voice-final-transcript",
+  VOICE_ERROR: "voice-error",
+  VOICE_GET_AUDIO_SOURCE: "voice-get-audio-source",
+  VOICE_SUBMIT_AUDIO: "voice-submit-audio",
+  VOICE_LIVE_TRANSCRIPT: "voice-live-transcript",
+  VOICE_QUESTION_ANSWER_START: "voice-question-answer-start",
+  VOICE_QUESTION_ANSWER_CHUNK: "voice-question-answer-chunk",
+  VOICE_QUESTION_ANSWER_END: "voice-question-answer-end",
 };
 
 module.exports = {

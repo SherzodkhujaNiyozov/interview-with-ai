@@ -188,8 +188,8 @@ function setupEventHandlers(mainWindow, configManager, windowManager, aiProvider
       }
 
       // Check if we need to show settings window due to no API keys
-      const apiKey = configManager.getApiKey();
       const provider = configManager.getAiProvider();
+      const apiKey = configManager.getApiKey(provider);
       if (!apiKey) {
         console.warn("No API key found, suggesting Settings window");
         // Only suggest settings if we're not using Ollama

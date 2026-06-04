@@ -8,6 +8,7 @@ let AZURE_FOUNDRY_ENDPOINT = "";
 let aiProvider = AI_PROVIDERS.DEFAULT;
 let currentModel = "";
 let responseLanguage = "en"; // en = English
+let withFurigana = false;
 
 // Available language options
 const LANGUAGES = {
@@ -45,6 +46,7 @@ function loadSettingsFromFile() {
       if (settings.ollamaUrl) OLLAMA_BASE_URL = settings.ollamaUrl.replace("localhost", "127.0.0.1");
       if (settings.azureEndpoint) AZURE_FOUNDRY_ENDPOINT = settings.azureEndpoint;
       if (settings.responseLanguage) responseLanguage = settings.responseLanguage;
+      if (settings.withFurigana !== undefined) withFurigana = settings.withFurigana;
 
       return true;
     }
@@ -213,6 +215,15 @@ function setResponseLanguage(language) {
   return responseLanguage;
 }
 
+function getWithFurigana() {
+  return withFurigana;
+}
+
+function setWithFurigana(enabled) {
+  withFurigana = enabled;
+  return withFurigana;
+}
+
 function getAvailableLanguages() {
   return LANGUAGES;
 }
@@ -234,6 +245,7 @@ function getCurrentSettings() {
     ollamaUrl: OLLAMA_BASE_URL,
     azureEndpoint: AZURE_FOUNDRY_ENDPOINT,
     responseLanguage,
+    withFurigana,
   };
 }
 
@@ -268,6 +280,11 @@ function updateSettings(settings) {
     hasChanges = true;
   }
 
+  if (settings.withFurigana !== undefined && settings.withFurigana !== withFurigana) {
+    withFurigana = settings.withFurigana;
+    hasChanges = true;
+  }
+
   if (hasChanges) {
     saveSettingsToFile(getCurrentSettings());
   }
@@ -284,6 +301,8 @@ module.exports = {
   setCurrentModel,
   getResponseLanguage,
   setResponseLanguage,
+  getWithFurigana,
+  setWithFurigana,
   getAvailableLanguages,
   getAzureEndpoint,
   setAzureEndpoint,

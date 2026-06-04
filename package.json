@@ -169,6 +169,7 @@
     "axios": "^1.8.4",
     "electron-log": "^5.2.4",
     "electron-screenshots": "^0.5.27",
+    "koffi": "^3.0.2",
     "openai": "^4.90.0",
     "rehype-autolink-headings": "^5.0.1",
     "rehype-format": "^3.1.0",

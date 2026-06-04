@@ -20,6 +20,7 @@ const toastManager = require("./js/toast-manager");
 const macOSPermissions = isMac ? require("./js/macos-permissions") : null;
 const ChatHandler = require("./js/chat-handler");
 const UpdateManager = require("./js/update-manager");
+const voiceHandler = require("./js/voice-handler");
 
 // Set up hot reload for development
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
@@ -346,6 +347,25 @@ app.whenReady().then(async () => {
   eventHandler.setupEventHandlers(mainWindow, configManager, windowManager, aiProviders);
   const screenshotInstance = screenshotManager.initScreenshotCapture();
 
+  // Voice handler: capture system audio + Gemini for transcribe-and-answer.
+  voiceHandler.init({ aiProviders, configManager });
+
+  ipcMain.handle(IPC_CHANNELS.VOICE_GET_AUDIO_SOURCE, async () => {
+    return await voiceHandler.getAudioSourceId();
+  });
+
+  ipcMain.on(IPC_CHANNELS.VOICE_SUBMIT_AUDIO, async (event, payload) => {
+    await voiceHandler.processAudio(event.sender, payload);
+  });
+
+  ipcMain.on(IPC_CHANNELS.VOICE_STATE_CHANGED, (_, state) => {
+    log.info(`Voice state: ${state.listening ? "listening" : "stopped"}`);
+  });
+
+  ipcMain.on(IPC_CHANNELS.VOICE_ERROR, (_, msg) => {
+    log.warn("Voice error from renderer:", msg);
+  });
+
   // Set up hot reload for development mode with more granular control
   if (isDev) {
     try {
@@ -494,6 +514,17 @@ app.whenReady().then(async () => {
           windowManager.toggleSplitView(true); // Force on
           log.info("Created new chat via hotkey (already off)");
         }
+      }
+    },
+    TOGGLE_VOICE: () => {
+      // Open split view (where chat lives) and toggle voice listening
+      const mainWindow = windowManager.getMainWindow();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        // Make sure split view is open so the chat UI is visible
+        windowManager.toggleSplitView(true);
+        // Tell renderer to toggle voice recognition
+        mainWindow.webContents.send(IPC_CHANNELS.VOICE_TOGGLE);
+        log.info("Voice toggle hotkey pressed");
       }
     },
   });

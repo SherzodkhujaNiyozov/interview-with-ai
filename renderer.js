@@ -5,7 +5,11 @@ const { isMac, isLinux, modifierKey } = require("./js/config");
 const toastManager = require("./js/toast-manager");
 const hotkeysModal = require("./js/hotkeys-modal");
 const UpdateManager = require("./js/update-manager");
+const voiceRecognition = require("./js/voice-recognition-renderer");
 const log = require("electron-log");
+
+// Initialize voice recognition (binds to VOICE_TOGGLE IPC from main)
+voiceRecognition.init();
 
 // Initialize update notification handler for renderer
 const updateNotification = UpdateManager.createNotificationHandler();
@@ -459,7 +463,9 @@ const onChatMessageResponse = async (_, response) => {
   scrollToBottom(document.getElementById("split-messages-container"));
 };
 
-// Function to send message
+// Function to send message — exposed on window so voice-recognition-renderer
+// can submit transcripts through the same pathway as typed messages.
+window.sendMessage = sendMessage;
 function sendMessage(inputElement) {
   const message = inputElement.value.trim();
   if (!message) return;

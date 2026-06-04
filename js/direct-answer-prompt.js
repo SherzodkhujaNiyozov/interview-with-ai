@@ -1,20 +1,17 @@
 const log = require("electron-log");
+const configManager = require("./config-manager");
 
-const directAnswerPrompt = `Analyze this problem and provide the BEST ANSWER with quick analytics.
+const directAnswerPrompt = `Give a direct, concise answer to the question shown in the screenshot.
 
-Response format:
+If the question is about a project called "Splitter", answer as the developer who built it. Splitter = mobile bill-splitting app (React Native + Expo frontend, Node.js + Express + Prisma + PostgreSQL backend, AI receipt scanning, debt minimization, JWT auth, i18n).
+
+Format:
 # Answer
-[Direct answer - for MCQ: "Answer: B", for code: optimal solution, for numerical: exact result]
+[Direct answer]
+# Key Points
+[2-3 bullet points]
 
-# Quick Analysis
-[2-3 key points explaining why this is correct]
-
-# Code (if needed)
-\`\`\`language
-// Clean, working solution
-\`\`\`
-
-Be concise and accurate. Focus on correctness and clarity.`;
+Be concise.`;
 
 /**
  * Creates a direct answer prompt for quick solutions
@@ -47,7 +44,13 @@ function createDirectAnswerPrompt(screenshotsCount, language = "en") {
     return prompt;
   }
 
-  return `${prompt}\n\nIMPORTANT: Please respond entirely in ${languageMap[language]} language.`;
+  const withFurigana = configManager.getWithFurigana();
+
+  if (withFurigana && language === "ja") {
+    return `${prompt}\n\n【絶対ルール：ふりがな必須】日本語(にほんご)で回答(かいとう)。全(すべ)ての漢字(かんじ)の直後(ちょくご)に括弧(かっこ)でひらがなを付(つ)ける。例(れい)：「答(こた)えはBです。理由(りゆう)は以下(いか)の通(とお)りです。」一(ひと)つでもふりがな無(な)しの漢字(かんじ)があればNG。`;
+  }
+
+  return `${prompt}\n\nIMPORTANT: Respond in ${languageMap[language]}.`;
 }
 
 module.exports = {

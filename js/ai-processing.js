@@ -13,56 +13,17 @@ const { createDirectAnswerPrompt } = require("./direct-answer-prompt");
 // Store active request controllers for cancellation
 let activeRequestControllers = new Set();
 
-const basePrompt = `I need you to analyze this problem carefully and provide the best possible solution with excellent performance and readability.
+const basePrompt = `Analyze the screenshot and provide a clear, helpful answer.
 
-Guidelines:
-1. Take time to understand the problem fully before proposing a solution.
-2. Consider different approaches and select the most appropriate one.
-3. Prioritize code readability and maintainability while ensuring good performance.
-4. Handle edge cases and include error handling where appropriate.
-5. Start with a clear understanding of the problem before diving into code.
-6. Use modern practices, efficient algorithms, and optimize for both time and space complexity.
-7. Structure your code with clean architecture principles.
-8. Include robust error handling and edge case considerations.
+If the screenshot contains an interview question or a question about a project called "Splitter", answer as if you are the developer who built it. Splitter is a mobile bill-splitting app built with React Native + Expo (frontend), Node.js + Express + Prisma + PostgreSQL (backend). Key features: AI receipt scanning (Google Gemini), OFD QR code parsing, debt minimization algorithm, JWT auth, i18n (4 languages), Zustand state management, feature-sliced architecture.
 
-Your response MUST follow this exact structure with these main sections:
+For coding problems, structure your response as:
+# Problem Analysis
+# Solution Approach
+# Implementation (with code)
+# Complexity Analysis
 
-# Analyzing the Problem
-Provide a clear understanding of what the problem is asking, including:
-- The key requirements and constraints
-- Input/output specifications
-- Important edge cases to consider
-- Any implicit assumptions
-
-# My Thoughts
-- Explain your chosen approach and why it's optimal for this problem
-- Discuss any alternative approaches you considered
-- Outline the key algorithms or data structures you're using
-- The complete, well-commented implementation
-- Any trade-offs or alternative approaches you considered
-
-# Implementation
-- Start with a high-level overview of your solution strategy
-- Break down your implementation into logical steps, explaining each step before showing the code
-- For each significant code segment:
-  * First explain what you're going to do and why
-  * Then show the implementation with clean, well-structured code
-  * Use descriptive variable names that clearly indicate purpose
-- Structure your code naturally as a human developer would (not top-to-bottom sequential)
-- Group related logic and functionality together
-- Include detailed bilingual comments in both English and the user's selected language for all key parts
-- Comments should explain WHY, not just WHAT the code does
-- Demonstrate proper error handling and edge case coverage
-- Apply clean code principles and best practices
-
-# Complexity
-Analyze the efficiency of your solution:
-- Time complexity with explanation
-- Space complexity with explanation
-- Potential bottlenecks
-- Any further optimization possibilities
-
-Format your response in clear, well-structured Markdown with proper code blocks for all code.`;
+Be concise and accurate.`;
 
 /**
  * Creates a prompt for the AI based on the number of screenshots and preferred language
@@ -73,6 +34,7 @@ Format your response in clear, well-structured Markdown with proper code blocks 
  */
 function createPrompt(screenshotsCount, language = "en") {
   log.info("Create prompt with language:", language);
+  const withFurigana = configManager.getWithFurigana();
   let prompt = "";
   if (screenshotsCount === 1) {
     prompt = `The screenshot shows a programming problem or question. ${basePrompt}`;
@@ -94,7 +56,13 @@ function createPrompt(screenshotsCount, language = "en") {
     return prompt;
   }
 
-  return `${prompt}\n\nIMPORTANT: Please respond entirely in ${languageMap[language]} language. For the Implementation section, provide all code comments in both English and ${languageMap[language]} side-by-side. Example: /* This validates the input (English) / Esto valida la entrada (Spanish) */`;
+  if (withFurigana && language === "ja") {
+    return `${prompt}\n\n【絶対ルール：ふりがな必須】日本語(にほんご)で回答(かいとう)。全(すべ)ての漢字(かんじ)の直後(ちょくご)に括弧(かっこ)でひらがなを付(つ)ける。例(れい)：「私(わたし)はSplitterという割(わ)り勘(かん)アプリを開発(かいはつ)しました。技術(ぎじゅつ)スタックはReact Nativeです。」一(ひと)つでもふりがな無(な)しの漢字(かんじ)があればNG。`;
+  }
+
+  let languageInstruction = `\n\nIMPORTANT: Please respond entirely in ${languageMap[language]} language.`;
+
+  return `${prompt}${languageInstruction}`;
 }
 
 /**
