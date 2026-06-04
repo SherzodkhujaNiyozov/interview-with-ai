@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const API_KEY = "AQ.Ab8RN6KWh_jN2V4gAQFKMnVRBoaCd0JFjYG5YX_IMcYb1jS0Sw";
+const API_KEY = process.env.API_KEY;
 
 async function testModel(modelName) {
   const genAI = new GoogleGenerativeAI(API_KEY);
