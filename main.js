@@ -309,6 +309,24 @@ app.whenReady().then(async () => {
   // Handle saving API key to settings file
   ipcMain.handle(IPC_CHANNELS.SAVE_API_KEY, async (_, apiKey, provider) => {
     try {
+      // Sanitize: trim whitespace and reject obvious paste mistakes early.
+      // Without this, pasting a multi-line log dump gets stored and then
+      // produces confusing 401 / ByteString errors at request time.
+      if (typeof apiKey === "string") {
+        apiKey = apiKey.trim();
+      }
+      if (!apiKey || apiKey.length === 0) {
+        log.warn("save-api-key: empty key, ignoring");
+        return false;
+      }
+      if (apiKey.length > 200) {
+        log.warn(`save-api-key: key suspiciously long (${apiKey.length} chars) — likely a paste mistake; ignoring`);
+        return false;
+      }
+      if (/\s/.test(apiKey)) {
+        log.warn("save-api-key: key contains whitespace — likely a paste mistake; ignoring");
+        return false;
+      }
       return configManager.saveApiKey(apiKey, provider);
     } catch (error) {
       log.error("Error saving API key:", error);

@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { AI_PROVIDERS } = require("./constants");
 const { getUserDataPath } = require("./utils");
+const { loadPrompt } = require("./prompt-loader");
 const fs = require("fs");
 const { HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
 const EventEmitter = require("events");
@@ -292,15 +293,7 @@ class ChatHandler {
    * @returns {string} The system prompt or empty string if not found
    */
   loadSystemPrompt() {
-    try {
-      const systemPromptFile = getUserDataPath("systemPrompt.txt");
-      if (fs.existsSync(systemPromptFile)) {
-        return fs.readFileSync(systemPromptFile, "utf8");
-      }
-    } catch (error) {
-      console.error("Error loading system prompt:", error);
-    }
-    return "";
+    return loadPrompt();
   }
 
   /**

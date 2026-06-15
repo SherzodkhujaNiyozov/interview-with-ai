@@ -16,10 +16,11 @@ const { IPC_CHANNELS } = require("./constants");
 
 // VAD tuning constants
 const VAD_TICK_MS = 100;             // how often we sample volume
-const VAD_VOLUME_THRESHOLD = 0.012;  // RMS threshold for "speech" (0–1)
+const VAD_VOLUME_THRESHOLD = 0.005;  // RMS threshold for "speech" (0–1). Lower = more sensitive.
 const END_OF_UTTERANCE_MS = 1300;    // silence after speech → finalize utterance
 const MIN_UTTERANCE_MS = 700;        // discard shorter blips (noise)
 const MAX_UTTERANCE_MS = 25000;      // safety: force flush even if no silence
+const DEBUG_LOG_INTERVAL_MS = 1500;  // log peak RMS every ~1.5s so user can verify audio
 
 let mediaStream = null;
 let audioContext = null;
@@ -34,6 +35,8 @@ let utteranceStartTime = 0;
 let lastSpeechTime = 0;
 let inSpeech = false;
 let utteranceCounter = 0;
+let peakRmsSinceLastLog = 0;
+let lastDebugLogTime = 0;
 
 function ensurePill() {
   if (pillElement) return pillElement;
@@ -228,6 +231,16 @@ function tickVAD() {
   const now = Date.now();
   const utteranceDuration = now - utteranceStartTime;
 
+  // Track peak so we can debug-log it periodically
+  if (rms > peakRmsSinceLastLog) peakRmsSinceLastLog = rms;
+  if (now - lastDebugLogTime >= DEBUG_LOG_INTERVAL_MS) {
+    const status = peakRmsSinceLastLog >= VAD_VOLUME_THRESHOLD ? "✓ SPEECH" : "(silent)";
+    console.log(`[voice] audio level — peak RMS=${peakRmsSinceLastLog.toFixed(4)} threshold=${VAD_VOLUME_THRESHOLD} ${status}`);
+    updatePillLevel(peakRmsSinceLastLog);
+    peakRmsSinceLastLog = 0;
+    lastDebugLogTime = now;
+  }
+
   if (rms >= VAD_VOLUME_THRESHOLD) {
     // Detected speech
     if (!inSpeech) {
@@ -249,6 +262,17 @@ function tickVAD() {
     console.log(`[voice] end-of-utterance (silence ${now - lastSpeechTime}ms)`);
     finalizeUtteranceAndShip();
   }
+}
+
+function updatePillLevel(rms) {
+  if (!pillElement) return;
+  const t = pillElement.querySelector("#voice-pill-text");
+  if (!t) return;
+  // Map RMS [0..0.1] to bar [0..15 chars]
+  const barLen = Math.min(15, Math.round(rms * 150));
+  const bar = "▓".repeat(barLen) + "░".repeat(15 - barLen);
+  const detecting = rms >= VAD_VOLUME_THRESHOLD ? "🎤 hearing" : "👂 listening";
+  t.textContent = `${detecting} [${bar}]`;
 }
 
 async function startListening() {
@@ -277,11 +301,14 @@ async function startListening() {
     return;
   }
 
+  peakRmsSinceLastLog = 0;
+  lastDebugLogTime = Date.now();
   vadIntervalId = setInterval(tickVAD, VAD_TICK_MS);
   isListening = true;
-  setPill("🔴 Live listening — speak to test, Ctrl+Shift+L to stop");
+  updateButtonState();
+  setPill("👂 listening [░░░░░░░░░░░░░░░]");
   ipcRenderer.send(IPC_CHANNELS.VOICE_STATE_CHANGED, { listening: true });
-  console.log("[voice] live mode started");
+  console.log("[voice] live mode started — peak RMS will be logged every 1.5s");
 }
 
 function stopListening() {
@@ -303,6 +330,7 @@ function stopListening() {
     mediaStream = null;
   }
   isListening = false;
+  updateButtonState();
   hidePill();
   ipcRenderer.send(IPC_CHANNELS.VOICE_STATE_CHANGED, { listening: false });
   console.log("[voice] stopped");
@@ -350,8 +378,37 @@ function scrollToBottom(container) {
   container.scrollTop = container.scrollHeight;
 }
 
+function updateButtonState() {
+  const btn = document.getElementById("voice-listen-btn");
+  const dot = document.getElementById("voice-listen-dot");
+  if (btn) {
+    btn.title = isListening
+      ? "Stop listening (Ctrl+Shift+L)"
+      : "Start live voice listening (Ctrl+Shift+L)";
+    btn.style.background = isListening ? "rgba(220, 38, 38, 0.15)" : "";
+  }
+  if (dot) {
+    dot.style.display = isListening ? "block" : "none";
+  }
+}
+
+function wireButton() {
+  const btn = document.getElementById("voice-listen-btn");
+  if (!btn) {
+    // Button not yet in DOM — retry after a short delay
+    setTimeout(wireButton, 300);
+    return;
+  }
+  btn.addEventListener("click", () => {
+    console.log("[voice] button clicked");
+    toggleVoice();
+  });
+  console.log("[voice] button wired up");
+}
+
 function init() {
   ipcRenderer.on(IPC_CHANNELS.VOICE_TOGGLE, () => {
+    console.log("[voice] IPC VOICE_TOGGLE received");
     toggleVoice();
   });
 
@@ -365,6 +422,13 @@ function init() {
     const typingIndicator = document.getElementById("split-typing-indicator");
     if (typingIndicator) typingIndicator.classList.add("visible");
   });
+
+  // Wire up the visible button (works even if global hotkey is blocked)
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireButton);
+  } else {
+    wireButton();
+  }
 
   console.log("[voice] live handler initialized");
 }

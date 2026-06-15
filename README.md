@@ -1,229 +1,246 @@
-# <div align="center">Interview Coder</div>
-
 <div align="center">
-  <img src="build/logo.png" alt="Interview Coder Logo" width="150" height="150"/>
-  <br/>
-  <br/>
-  <strong>Your AI-Powered Coding Interview Assistant</strong>
-  <br/>
-  <br/>
-</div>
 
-<div align="center">
+# Interview With AI
+
+<img src="build/logo.png" alt="Interview With AI Logo" width="140" height="140"/>
+
+**A real-time, AI-powered interview assistant that listens, transcribes, and answers — invisibly.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Platform - Windows, macOS, Linux](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-
-![Electron Version](https://img.shields.io/badge/electron-v35.1.2-blue)
-![Version](https://img.shields.io/badge/version-v1.8.1-green)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
+![Electron](https://img.shields.io/badge/electron-v35-blue)
+![Powered by Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8e44ad)
 
 </div>
 
-<hr/>
+---
 
-## 🚀 Overview
+## Overview
 
-Interview Coder is an advanced Electron application that leverages AI to analyze screenshots and assist with coding interviews. Whether you need to solve coding problems, generate code, or get detailed explanations, Interview Coder has got you covered with support for multiple AI providers and a seamless user experience.
+**Interview With AI** is an Electron desktop application that helps you during live, voice-based interviews. It captures your computer's audio in real time, transcribes what the interviewer is saying, decides whether it's a question, and generates a tailored answer — all within seconds, and all while staying **invisible to screen-sharing software**.
 
-## ✨ Key Features
+It was originally built for a Japanese-language technical interview, so it has first-class support for **Japanese answers with furigana** (reading hints over kanji, e.g. `開発(かいはつ)`). The assistant's persona and knowledge are driven entirely by a single editable [`prompt.txt`](#customizing-for-your-own-project) file, making it trivial to adapt to **your own project, language, or domain** without touching the code.
 
-- 📸 **Smart Screenshot Capture**
-  - Global keyboard shortcuts for instant captures
-  - Support for window and area-specific screenshots
-  - Multi-page mode for complex questions
+> ⚠️ **Disclaimer.** This tool is intended for interview *preparation*, mock interviews, accessibility, and learning. Using it to deceive an interviewer in a real hiring process may violate the terms of that process. Use responsibly.
 
-- 🤖 **Powerful AI Integration**
-  - OpenAI integration (GPT-4 Vision)
-  - Google Gemini support
-  - Local Ollama compatibility
-  - Real-time streaming responses
+---
 
-- 🌐 **Multilingual Support**
-  - Responses in 8 different languages
-  - English, Vietnamese, Spanish, French, German, Japanese, Korean, and Chinese
-  - Language preferences persist across sessions
+## Key Features
 
-- 🎯 **User-Friendly Interface**
-  - Transparent, always-on-top window
-  - Markdown-rendered responses
-  - Customizable positioning
-  - Platform-aware keyboard shortcuts
-  - Collapsible settings sections
+### 🎙️ Live Voice Mode (the core feature)
+- Continuously listens to your system audio (the interviewer's voice through your speakers).
+- Built-in **Voice Activity Detection (VAD)** automatically segments speech into utterances — no need to press a button per question.
+- Each utterance is processed in a **two-stage pipeline**:
+  1. **Transcription** — Gemini transcribes the raw audio faithfully (no hallucinated filler or paraphrasing).
+  2. **Judge & Answer** — Gemini decides if the utterance is a question directed at you and, if so, generates a full answer using your project context.
+- Greetings, small talk, and acknowledgements are recognized as **non-questions** and skipped, so you only get answers when they matter.
 
-## 🛠️ Prerequisites
+### 🈁 Japanese Furigana Support
+- When enabled, every kanji in the response is annotated with its hiragana reading: `私(わたし)はSplitterを開発(かいはつ)しました`.
+- Perfect for non-native speakers who can speak Japanese but read kanji slowly.
+- Toggle on/off in Settings.
 
-- [Node.js](https://nodejs.org/) (v18 or later recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- For AI functionality (one of the following):
-  - OpenAI API key
-  - Google Gemini API key
-  - [Ollama](https://ollama.ai/) running locally
+### 🫥 Invisible During Screen Sharing
+- On Windows, uses the native Win32 `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API (via [`koffi`](https://koffi.dev/)) so the window is **completely excluded** from screen capture — not just a black box.
+- The assistant stays fully visible to you while being absent from Google Meet, Zoom, Teams, and OBS captures.
+- Falls back to Electron's `setContentProtection` on other platforms.
 
-## 📦 Installation
+### 💬 Chat & Screenshot Modes
+- **Chat mode** (`Ctrl/⌘ + T`): type a question and get a streamed, markdown-rendered answer.
+- **Screenshot mode** (`Ctrl/⌘ + H`): capture the screen and let the AI analyze a coding problem or question.
+- Conversation context is preserved per window.
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/MinhOmega/interview-coder.git
-   cd interview-coder
-   ```
+### 🧩 Fully Customizable via `prompt.txt`
+- A single `prompt.txt` at the project root defines the AI's persona, your project details, answer language, and formatting rules.
+- Fork the repo, replace the contents with **your** project, and the assistant instantly becomes an expert on it.
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+### 🌐 Multiple AI Providers
+- **Google Gemini** (recommended — generous free tier, excellent multilingual + audio support).
+- OpenAI (GPT-4 family).
+- Local **Ollama** models.
+- Azure Foundry (Claude models).
 
-3. **Run the Application**
-   ```bash
-   npm start
-   ```
+---
 
-## 🔧 AI Configuration
+## How the Voice Pipeline Works
 
-No environment configuration is required to get started. API keys can be entered directly in the application:
-
-1. Launch Interview Coder
-2. Press `⌘+,` (Mac) or `Ctrl+,` (Windows/Linux) to open the settings
-3. Choose your preferred AI provider (OpenAI, Google Gemini, or Ollama)
-4. Enter your API key when prompted
-5. Select your preferred model
-6. Choose your preferred response language
-7. Save settings and start using!
-
-## 🔧 Using with Ollama
-
-1. Install Ollama from [ollama.ai](https://ollama.ai/)
-2. Start the Ollama service
-3. Pull a vision-capable model:
-   ```bash
-   ollama pull deepseek-r1:14b
-   ```
-4. Launch Interview Coder
-5. Press `⌘+,` (Mac) or `Ctrl+,` (Windows/Linux) to open the settings
-6. Select "Ollama" as your AI provider
-7. Configure the Ollama base URL if needed (default: http://127.0.0.1:11434)
-8. Choose your preferred model from the dropdown
-9. Save settings and start using!
-
-## 🌐 Language Settings
-
-Choose your preferred language for AI responses:
-
-1. Press `⌘+,` (Mac) or `Ctrl+,` (Windows/Linux) to open the settings
-2. Scroll down to the "Response Language" section
-3. Select your language from the available options:
-   - English (default)
-   - Vietnamese (Tiếng Việt)
-   - Spanish (Español)
-   - French (Français)
-   - German (Deutsch)
-   - Japanese (日本語)
-   - Korean (한국어)
-   - Chinese (中文)
-4. Save settings to apply your language preference
-
-The application will generate all AI responses in your selected language, with solution approaches tailored to your language preference.
-
-## 🔧 Troubleshooting
-
-### macOS Issues
-
-If you encounter issues opening the application on macOS due to security restrictions or "app is damaged" warnings, try running the following command in Terminal:
-
-```bash
-xattr -cr /Applications/Interview\ Coder.app
+```
+ ┌──────────────┐   system audio    ┌─────────────────┐
+ │  Your PC's   │ ────────────────▶ │  Renderer (VAD) │
+ │   speakers   │   (loopback)      │  detects speech │
+ └──────────────┘                   └────────┬────────┘
+                                              │ utterance (WebM/Opus)
+                                              ▼
+                                    ┌──────────────────────┐
+                                    │  Stage 1: Transcribe  │
+                                    │  Gemini (audio → text)│
+                                    └──────────┬───────────┘
+                                               │ faithful transcript
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │  Stage 2: Judge+Answer│
+                                    │  Gemini (text → JSON) │
+                                    │  {isQuestion, answer} │
+                                    └──────────┬───────────┘
+                                               │ answer (with furigana)
+                                               ▼
+                                    ┌──────────────────────┐
+                                    │   Chat UI (you read)  │
+                                    └──────────────────────┘
 ```
 
-This removes quarantine attributes that might prevent the app from running properly on macOS.
+Splitting transcription and answering into two calls is deliberate: when a single prompt is asked to both transcribe *and* role-play as an interviewee, the model tends to **hallucinate** plausible interview questions instead of transcribing what was actually said. Keeping the transcription step context-free fixes this.
 
-## ⌨️ Keyboard Shortcuts
+---
 
-### macOS
-| Shortcut           | Action                                            |
-| ------------------ | ------------------------------------------------- |
-| `⌘ + B`            | Toggle window visibility                          |
-| `⌘ + H`            | Capture window screenshot                         |
-| `⌘ + D`            | Capture selected area                             |
-| `⌘ + A`            | Add screenshot (multi-page)                       |
-| `⌘ + Enter`        | Process screenshots                               |
-| `⌘ + R`            | Reset current process or reset chat in split view |
-| `⌘ + N`            | Create new chat                                   |
-| `⌘ + T`            | Toggle split view                                 |
-| `⌘ + ,`            | Open settings                                     |
-| `⌘ + Q`            | Quit application                                  |
-| `⌘ + Shift + ↑↓←→` | Move window                                       |
-| `Shift + ↑↓`       | Scroll up/down (working in split view)            |
-| `⌘ + Shift + =`    | Increase window size                              |
-| `⌘ + Shift + -`    | Decrease window size                              |
-| `⌘ + Shift + I`    | Toggle DevTools                                   |
-| `⌘ + /`            | Show hotkeys                                      |
+## Prerequisites
 
-### Windows/Linux
-| Shortcut              | Action                                            |
-| --------------------- | ------------------------------------------------- |
-| `Ctrl + B`            | Toggle window visibility                          |
-| `Ctrl + H`            | Capture window screenshot                         |
-| `Ctrl + D`            | Capture selected area                             |
-| `Ctrl + A`            | Add screenshot (multi-page)                       |
-| `Ctrl + Enter`        | Process screenshots                               |
-| `Ctrl + R`            | Reset current process or reset chat in split view |
-| `Ctrl + N`            | Create new chat                                   |
-| `Ctrl + T`            | Toggle split view                                 |
-| `Ctrl + ,`            | Open settings                                     |
-| `Ctrl + Q`            | Quit application                                  |
-| `Ctrl + Shift + ↑↓←→` | Move window                                       |
-| `Shift + ↑↓`          | Scroll up/down (working in split view)            |
-| `Ctrl + Shift + =`    | Increase window size                              |
-| `Ctrl + Shift + -`    | Decrease window size                              |
-| `Ctrl + Shift + I`    | Toggle DevTools                                   |
-| `Ctrl + /`            | Show hotkeys                                      |
+- [Node.js](https://nodejs.org/) **v18+** (developed on v22).
+- A **Google Gemini API key** — free from [Google AI Studio](https://aistudio.google.com/apikey). Keys start with `AIzaSy...`.
+- **Windows 10 (build 19041 / version 2004) or newer** for full screen-capture invisibility. Earlier builds fall back to a less reliable mode.
+- For voice mode, your OS must expose **system audio loopback** (default on Windows via the desktop audio capturer).
 
-> **Note for Linux users:** Alternative key bindings may be used automatically if the primary shortcuts cannot be registered.
+---
 
-## 🤖 Supported AI Models
-
-### OpenAI
-- gpt-4o-mini
-- gpt-4o
-- gpt-4-vision-preview
-- gpt-4-turbo
-
-### Google Gemini
-- gemini-2.0-flash
-
-### Ollama
-- deepseek-r1:14b (recommended)
-- Any vision-capable Ollama model
-
-## ⚠️ Status
-
-This project is under active development. While core features are functional, you may encounter occasional bugs or incomplete features. Your feedback and contributions are welcome!
-
-## 💭 Personal Note
-
-Inspired by interviewcoder.co but with a twist - making the tool openly available rather than behind paywalls. This project aims to challenge the status quo of technical interviews and encourage companies to explore more comprehensive ways of assessing candidates beyond traditional coding challenges.
-
-## Development Mode with Hot Reload
-
-This application supports a development mode with hot reloading for a more efficient development experience.
-
-### Running in Development Mode
-
-Use these npm scripts to run the application with hot reload enabled:
+## Installation
 
 ```bash
-# For macOS/Linux
-npm run dev
+# 1. Clone
+git clone https://github.com/SherzodkhujaNiyozov/interview-with-ai.git
+cd interview-with-ai
 
-# For Windows
-npm run dev:windows
+# 2. Install dependencies
+npm install
+
+# 3. Run
+npm start
 ```
 
-## Chat Features
+For development with hot reload:
 
-- Reset Chat: You can reset the current chat to its initial state by pressing `⌘+R` (Mac) or `Ctrl+R` (Windows/Linux) while in split view.
-- New Chat: You can create a new chat session by pressing `⌘+N` (Mac) or `Ctrl+N` (Windows/Linux).
+```bash
+npm run dev          # macOS / Linux
+npm run dev:windows  # Windows
+```
 
-<div align="center">
-<br/>
-Made with ❤️ by <a href="mailto:vnqminh0502@gmail.com">Minh Vo</a>
-</div>
+---
+
+## Setup
+
+1. Launch the app and press `Ctrl + ,` (or `⌘ + ,` on macOS) to open **Settings**.
+2. Select **Google Gemini** as the AI provider.
+3. Paste your API key (the full `AIzaSy...` string — nothing else).
+4. Choose a model — **`gemini-2.5-flash`** or **`gemini-2.5-flash-lite`** are recommended (they have a working free-tier quota and support audio).
+5. Set the response language (e.g. **Japanese**) and toggle **Furigana** if desired.
+6. Save.
+
+> **Note:** `gemini-2.0-flash` has no free-tier quota and is automatically upgraded to `gemini-2.5-flash` for voice requests.
+
+---
+
+## Usage
+
+### Voice Mode
+1. Open the chat panel: `Ctrl/⌘ + T`.
+2. Click the **microphone button** in the input bar (or press `Ctrl/⌘ + Shift + L`).
+3. A red "listening" indicator appears with a live audio-level meter.
+4. Leave it running for the whole interview. As the interviewer asks questions, transcripts appear and answers stream in automatically.
+5. Click the button again (or press the hotkey) to stop.
+
+### Chat Mode
+- Type a question in the input box and press **Enter**. Answers stream in with full markdown formatting.
+
+### Screenshot Mode
+- Press `Ctrl/⌘ + H` to capture and analyze the screen.
+
+---
+
+## Customizing for Your Own Project
+
+The assistant's entire personality and knowledge live in **`prompt.txt`** at the project root. To adapt it to your own project:
+
+1. Open `prompt.txt`.
+2. Replace the project description, tech stack, and rules with your own.
+3. Keep (or remove) the furigana rules depending on your target language.
+4. Restart — done. No code changes required.
+
+The app loads the prompt in this order: `prompt.txt` (project root) → `systemPrompt.txt` (user data dir, legacy) → empty. This makes the repo **fork-friendly**: anyone can clone it, drop in their own `prompt.txt`, and have a personalized interview assistant.
+
+---
+
+## Keyboard Shortcuts
+
+Use `⌘` on macOS, `Ctrl` on Windows/Linux.
+
+| Shortcut            | Action                                   |
+| ------------------- | ---------------------------------------- |
+| `Mod + Shift + L`   | **Start/stop live voice listening**      |
+| `Mod + T`           | Toggle chat (split view)                 |
+| `Mod + N`           | New chat                                 |
+| `Mod + H`           | Capture & analyze screenshot             |
+| `Mod + D`           | Capture selected area                    |
+| `Mod + Enter`       | Process screenshots                      |
+| `Mod + B`           | Toggle window visibility                 |
+| `Mod + R`           | Reset chat / current process             |
+| `Mod + ,`           | Open settings                            |
+| `Mod + Shift + ↑↓←→`| Move window                              |
+| `Shift + ↑↓`        | Scroll content                           |
+| `Mod + Shift + =/-` | Increase / decrease window size          |
+| `Mod + Shift + I`   | Toggle DevTools                          |
+| `Mod + /`           | Show all hotkeys                         |
+| `Mod + Q`           | Quit                                     |
+
+---
+
+## Tech Stack
+
+- **Electron 35** — cross-platform desktop shell.
+- **Google Generative AI SDK** (`@google/generative-ai`) — Gemini text + audio.
+- **koffi** — native FFI to call Win32 `SetWindowDisplayAffinity` for screen-capture exclusion.
+- **Web Audio API + MediaRecorder** — system-audio capture and VAD in the renderer.
+- **unified / remark / rehype** — markdown rendering with syntax highlighting.
+- **electron-log**, **electron-builder**, **electron-updater**.
+
+---
+
+## Project Structure
+
+```
+interview-with-ai/
+├── main.js                          # Electron main process & IPC wiring
+├── renderer.js                      # Renderer entry (chat UI, events)
+├── prompt.txt                       # ← Edit this to customize the AI
+├── index.html                       # Main window markup
+└── js/
+    ├── voice-handler.js             # Main-process: audio → Gemini → answer
+    ├── voice-recognition-renderer.js# Renderer: system-audio capture + VAD
+    ├── prompt-loader.js             # Loads prompt.txt (fork-friendly)
+    ├── win-capture-hide.js          # Native WDA_EXCLUDEFROMCAPTURE hiding
+    ├── chat-handler.js              # Chat conversations & streaming
+    ├── ai-providers.js              # Provider clients (Gemini/OpenAI/Ollama/Azure)
+    ├── window-manager.js            # Always-on-top, transparent window
+    ├── hotkey-manager.js            # Global shortcuts
+    ├── config-manager.js            # Settings persistence
+    └── ...
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause / Fix |
+| ------- | ----------- |
+| **Voice listens but no answer** | Check the API key is a valid `AIzaSy...` key (not an OAuth token, not a log paste). Re-enter it in Settings. |
+| **`429 quota exceeded`** | You're on `gemini-2.0-flash` (no free quota) or hit the rate limit. Switch to `gemini-2.5-flash` / `-flash-lite` and wait a minute. |
+| **`503 overloaded`** | Gemini is temporarily busy. The app auto-retries and falls back to `flash-lite`; wait ~30s. |
+| **Window still visible in screen share** | Requires Windows 10 build 19041+. Check `winver`. Older builds can only use the weaker fallback. |
+| **No audio detected (meter stays flat)** | Voice mode captures *system* audio, not your mic — play the interviewer's audio through your speakers. |
+| **macOS "app is damaged"** | Run `xattr -cr "/Applications/Interview With AI.app"`. |
+
+---
+
+## License
+
+[MIT](LICENSE).
+
+This project is a customized fork of [MinhOmega/interview-coder](https://github.com/MinhOmega/interview-coder), extended with live voice transcription, furigana support, `prompt.txt`-based customization, and native screen-capture invisibility.

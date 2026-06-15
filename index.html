@@ -96,6 +96,16 @@
               <textarea id="split-chat-input" class="system-prompt-textarea chat-input-modern"
                 placeholder="Type your message..."></textarea>
               <div class="chat-button-group">
+                <button id="voice-listen-btn" class="chat-icon-btn" title="Toggle live voice listening (Ctrl+Shift+L)" style="position: relative;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                  <span id="voice-listen-dot" style="display:none;position:absolute;top:2px;right:2px;width:8px;height:8px;background:#dc2626;border-radius:50%;animation:voice-pulse 1s ease-in-out infinite;"></span>
+                </button>
                 <button id="toggle-system-prompt-btn" class="chat-icon-btn" title="System Prompt">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
